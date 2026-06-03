@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CineSync</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #080c14;
+      --surface: #0f1623;
+      --border: rgba(255,255,255,0.07);
+      --accent: #e8445a;
+      --accent2: #7c5af0;
+      --text: #f0f4ff;
+      --muted: #6b7a9a;
+      --success: #22c55e;
+      --radius: 14px;
+    }
+
+    body {
+      width: 340px;
+      min-height: 480px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      overflow: hidden;
+    }
+
+    /* Animated background blobs */
+    .bg-blobs {
+      position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none;
+    }
+    .blob {
+      position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.15;
+      animation: drift 8s ease-in-out infinite alternate;
+    }
+    .blob-1 { width: 180px; height: 180px; background: var(--accent); top: -40px; left: -40px; animation-delay: 0s; }
+    .blob-2 { width: 140px; height: 140px; background: var(--accent2); bottom: -30px; right: -30px; animation-delay: -3s; }
+    @keyframes drift {
+      from { transform: translate(0,0) scale(1); }
+      to { transform: translate(20px,15px) scale(1.1); }
+    }
+
+    .container {
+      position: relative; z-index: 1;
+      display: flex; flex-direction: column;
+      min-height: 480px;
+    }
+
+    /* Header */
+    .header {
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .logo {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+      box-shadow: 0 4px 16px rgba(232,68,90,0.35);
+    }
+    .header-text h1 {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 18px;
+      letter-spacing: -0.5px;
+      line-height: 1;
+    }
+    .header-text p {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--muted);
+      margin-left: auto; flex-shrink: 0;
+      transition: background 0.4s;
+    }
+    .status-dot.connected { background: var(--success); animation: pulse-dot 2s infinite; }
+    @keyframes pulse-dot {
+      0%,100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
+      50% { box-shadow: 0 0 0 6px rgba(34,197,94,0); }
+    }
+
+    /* Screens */
+    .screen { display: none; flex-direction: column; flex: 1; padding: 20px; gap: 16px; }
+    .screen.active { display: flex; }
+
+    /* Room screen (active session) */
+    .room-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+    }
+    .room-label {
+      font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+    .room-code {
+      font-family: 'Syne', sans-serif;
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: 6px;
+      color: var(--text);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .copy-btn {
+      margin-left: auto;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 5px 10px;
+      color: var(--muted);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .copy-btn:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+    .copy-btn.copied { color: var(--success); border-color: var(--success); }
+
+    .role-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: rgba(232,68,90,0.12); border: 1px solid rgba(232,68,90,0.25);
+      border-radius: 20px; padding: 4px 10px;
+      font-size: 12px; color: var(--accent);
+      font-weight: 500;
+      width: fit-content;
+    }
+    .role-badge.guest {
+      background: rgba(124,90,240,0.12); border-color: rgba(124,90,240,0.25);
+      color: var(--accent2);
+    }
+
+    .members-row {
+      display: flex; align-items: center; gap: 8px;
+      color: var(--muted); font-size: 12px;
+    }
+    .members-row .count {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700; font-size: 15px; color: var(--text);
+    }
+
+    /* Sync indicator */
+    .sync-bar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .sync-icon { font-size: 18px; animation: spin 3s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .sync-icon.paused { animation: none; }
+    .sync-info { flex: 1; }
+    .sync-info .time { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; }
+    .sync-info .state { font-size: 11px; color: var(--muted); }
+
+    /* Chat */
+    .chat-container {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+      min-height: 120px;
+      max-height: 150px;
+    }
+    .chat-messages {
+      flex: 1; overflow-y: auto;
+      padding: 10px 12px;
+      display: flex; flex-direction: column; gap: 4px;
+      scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+    }
+    .chat-msg {
+      font-size: 12px; line-height: 1.4;
+      padding: 2px 0;
+    }
+    .chat-msg .sender { font-weight: 600; color: var(--accent2); margin-right: 4px; }
+    .chat-msg.system { color: var(--muted); font-style: italic; }
+    .chat-input-row {
+      display: flex; border-top: 1px solid var(--border);
+    }
+    .chat-input {
+      flex: 1; background: transparent; border: none; outline: none;
+      padding: 8px 12px; color: var(--text); font-size: 12px;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .chat-input::placeholder { color: var(--muted); }
+    .chat-send {
+      background: none; border: none; border-left: 1px solid var(--border);
+      padding: 8px 12px; color: var(--accent); cursor: pointer;
+      font-size: 14px; transition: opacity 0.2s;
+    }
+    .chat-send:hover { opacity: 0.7; }
+
+    /* Buttons */
+    .btn {
+      width: 100%; padding: 13px;
+      border: none; border-radius: 12px;
+      font-family: 'Syne', sans-serif;
+      font-size: 14px; font-weight: 700;
+      cursor: pointer; transition: all 0.2s;
+      letter-spacing: 0.3px;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #c73050);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(232,68,90,0.35);
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(232,68,90,0.45); }
+    .btn-secondary {
+      background: var(--surface); color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.06); }
+    .btn-danger {
+      background: rgba(232,68,90,0.08); color: var(--accent);
+      border: 1px solid rgba(232,68,90,0.2);
+    }
+    .btn-danger:hover { background: rgba(232,68,90,0.15); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    /* Input */
+    .input-group { display: flex; flex-direction: column; gap: 6px; }
+    .input-group label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+    .input-field {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px 14px;
+      color: var(--text);
+      font-size: 15px;
+      font-family: 'Syne', sans-serif;
+      font-weight: 600;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      outline: none;
+      width: 100%;
+      transition: border 0.2s;
+    }
+    .input-field::placeholder { opacity: 0.3; letter-spacing: 1px; text-transform: none; font-weight: 400; font-size: 13px; }
+    .input-field:focus { border-color: var(--accent2); }
+
+    /* Divider */
+    .divider {
+      display: flex; align-items: center; gap: 10px;
+      color: var(--muted); font-size: 11px;
+    }
+    .divider::before, .divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+
+    /* Supported sites */
+    .sites {
+      display: flex; flex-wrap: wrap; gap: 6px;
+    }
+    .site-chip {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: 11px; color: var(--muted);
+    }
+
+    /* Tips */
+    .tip {
+      font-size: 11px; color: var(--muted);
+      padding: 10px 14px;
+      background: rgba(124,90,240,0.06);
+      border: 1px solid rgba(124,90,240,0.12);
+      border-radius: 10px;
+      line-height: 1.5;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  </style>
+</head>
+<body>
+  <div class="bg-blobs">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+  </div>
+
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">🎬</div>
+      <div class="header-text">
+        <h1>CineSync</h1>
+        <p>Synchronized Watch Party</p>
+      </div>
+      <div class="status-dot" id="statusDot"></div>
+    </div>
+
+    <!-- Home Screen -->
+    <div class="screen active" id="homeScreen">
+      <div class="tip">
+        Open your streaming app in this tab, then create or join a party.
+      </div>
+
+      <button class="btn btn-primary" id="createBtn">🎉 Create Party</button>
+
+      <div class="divider">or join with a code</div>
+
+      <div class="input-group">
+        <label>Party Code</label>
+        <input class="input-field" id="codeInput" type="text" maxlength="8" placeholder="Enter code…" autocomplete="off" spellcheck="false" />
+      </div>
+
+      <button class="btn btn-secondary" id="joinBtn">🔗 Join Party</button>
+
+      <div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">Works on</div>
+        <div class="sites">
+          <span class="site-chip">Disney+</span>
+          <span class="site-chip">Hotstar</span>
+          <span class="site-chip">Netflix</span>
+          <span class="site-chip">Prime Video</span>
+          <span class="site-chip">YouTube</span>
+          <span class="site-chip">Hulu</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Room Screen -->
+    <div class="screen" id="roomScreen">
+      <div class="room-card">
+        <div class="room-label">Party Code</div>
+        <div class="room-code">
+          <span id="roomCodeDisplay">------</span>
+          <button class="copy-btn" id="copyBtn">Copy</button>
+        </div>
+        <div style="margin-top:10px;display:flex;align-items:center;justify-content:space-between;">
+          <div class="role-badge" id="roleBadge">👑 Host</div>
+          <div class="members-row">
+            <span>👥</span>
+            <span class="count" id="memberCount">1</span>
+            <span>watching</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sync-bar">
+        <div class="sync-icon" id="syncIcon">⏳</div>
+        <div class="sync-info">
+          <div class="time" id="syncTime">Waiting for video…</div>
+          <div class="state" id="syncState">No video detected</div>
+        </div>
+      </div>
+
+      <div class="chat-container">
+        <div class="chat-messages" id="chatMessages">
+          <div class="chat-msg system">Party chat — say hi! 👋</div>
+        </div>
+        <div class="chat-input-row">
+          <input class="chat-input" id="chatInput" type="text" placeholder="Say something…" maxlength="200" />
+          <button class="chat-send" id="chatSend">➤</button>
+        </div>
+      </div>
+
+      <button class="btn btn-danger" id="leaveBtn">Leave Party</button>
+    </div>
+  </div>
+
+  <script src="src/popup.js"></script>
+</body>
+</html>
