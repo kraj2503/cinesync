@@ -1,15 +1,12 @@
 {
-  "name": "cinesync-relay",
+  "name": "watch-party-server",
   "version": "1.0.0",
-  "description": "CineSync WebSocket relay server",
+  "description": "WebSocket server for Watch Party Extension",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "ws": "^8.14.2"
-  },
-  "engines": {
-    "node": ">=16"
+    "ws": "^8.16.0"
   }
 }
