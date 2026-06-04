@@ -2,7 +2,7 @@ const WebSocket = require('ws');
 const port = process.env.PORT || 8080;
 const server = new WebSocket.Server({ port: port });
 
-console.log(`WebSocket server running on port ${port}`);
+console.log(`WebSocket V4 server running on port ${port}`);
 
 const rooms = {};
 
@@ -12,7 +12,7 @@ server.on('connection', (ws) => {
   ws.on('message', (message) => {
     try {
       const data = JSON.parse(message);
-
+      console.log("asdfasdf")
       if (data.action === "create_room" || data.action === "join_room") {
         currentRoom = data.roomCode;
         if (!rooms[currentRoom]) rooms[currentRoom] = [];
